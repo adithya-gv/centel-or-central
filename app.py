@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, url_for
+from flask import Flask, render_template_string, request
 import tweetParse
 import random
 
@@ -16,7 +16,7 @@ def home():
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-        <title>Tweets Display</title>
+        <title>Central vs. Centel</title>
         <style>
             .tweet-container {
                 border: 1px solid #e1e8ed;
@@ -37,7 +37,7 @@ def home():
       <body>
         <div class="container mt-5">
           <h1 class="mb-4">NBACentral vs. NBACentel</h1>
-          <p>One of the tweets below is from NBACentral, and is real. The other is from NBACentel, and is completely made up. Can you determine which is which?</p>
+          <p>One of the tweets below is a news story from NBACentral, and is real. The other is from NBACentel, and is completely made up. Determine which news story is real.</p>
           <form method="post" action="/result">
             {% for tweet in tweets %}
             <div class="tweet-container">

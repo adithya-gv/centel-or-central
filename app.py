@@ -99,7 +99,7 @@ def result():
           <button onclick="copyResults()" class="btn btn-secondary mt-3">Share Your Results</button>
           <script>
             function copyResults() {
-              const text = '{{ copy_message }} Check it out at: url_coming_soon';
+              const text = '{{ copy_message }} Check it out at: https://centel-or-central-6f38c772bce8.herokuapp.com/';
               navigator.clipboard.writeText(text).then(function() {
                 alert('Results copied to clipboard!');
               }, function(err) {

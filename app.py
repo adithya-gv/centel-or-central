@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request
+from flask import Flask, render_template_string, request, redirect, url_for
 import tweetParse
 import random
 
@@ -7,8 +7,13 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     central_tweet, centel_tweet, central_url, centel_url = tweetParse.getTweets()
-    tweets = [(central_tweet, 'central', central_url), (centel_tweet, 'centel', centel_url)]
-    random.shuffle(tweets)
+    if len(central_url) == 0:
+        central_url = "Tweet Not Found"
+    if len(centel_url) == 0:
+        centel_url = "Tweet Not Found"
+    tweets = [(central_tweet, 'NBACentral', central_url), (centel_tweet, 'NBACentel', centel_url)]
+    selected_tweet = random.choice(tweets)
+    tweet_content, tweet_source, tweet_url = selected_tweet
     template = """
     <!doctype html>
     <html lang="en">
@@ -16,7 +21,7 @@ def home():
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-        <title>Central vs. Centel</title>
+         <title>NBACentral vs. NBACentel</title>
         <style>
             .tweet-container {
                 border: 1px solid #e1e8ed;
@@ -37,14 +42,15 @@ def home():
       <body>
         <div class="container mt-5">
           <h1 class="mb-4">NBACentral vs. NBACentel</h1>
-          <p>One of the tweets below is a news story from NBACentral, and is real. The other is from NBACentel, and is completely made up. Determine which news story is real.</p>
-          <form method="post" action="/result">
-            {% for tweet in tweets %}
-            <div class="tweet-container">
-              <div class="content">{{ tweet[0] }}</div>
-              <button type="submit" name="selected_tweet" value="{{ tweet[1] }}" class="btn btn-primary mt-3">Select This Tweet</button>
-            </div>
-            {% endfor %}
+          <p>The tweet below is either from NBACentral (and is real), or from NBACentel (and is completely made up). Determine the source of the tweet below.</p>
+          <div class="tweet-container">
+            <div class="content">{{ tweet_content }}</div>
+          </div>
+          <form method="post" action="/result" class="text-center">
+            <button type="submit" name="selected_source" value="NBACentral" class="btn btn-primary mt-3 px-4 py-2">NBACentral</button>
+            <button type="submit" name="selected_source" value="NBACentel" class="btn btn-secondary mt-3 px-4 py-2">NBACentel</button>
+            <input type="hidden" name="actual_source" value="{{ tweet_source }}">
+            <input type="hidden" name="tweet_url" value="{{ tweet_url }}">
           </form>
         </div>
         <footer class="text-left mt-5" style="margin-left: auto; margin-right: auto; width: 80%;">
@@ -54,28 +60,23 @@ def home():
             <p>The two accounts are known for catching NBA fans off guard, with the lines between reality and parody blurring, with NBA Superstar Kevin Durant even joining in on the fun.</p>
             <p>Thus, I thought it would be a fun idea to make a game to have people guess which tweet is real, considering it fools everyone online already.</p>
         </footer>
-      </body>
+    </body>
     </html>
     """
-    return render_template_string(template, tweets=tweets)
+    return render_template_string(template, tweet_content=tweet_content, tweet_source=tweet_source, tweet_url=tweet_url)
 
 @app.route('/result', methods=['POST'])
 def result():
-    central_tweet, centel_tweet, central_url, centel_url = tweetParse.getTweets()
-    if len(central_url) == 0:
-        central_url = "Tweet Not Found"
-    if len(centel_url) == 0:
-        centel_url = "Tweet Not Found"
-    tweets = {'central': (central_tweet, central_url), 'centel': (centel_tweet, centel_url)}
-    selected_tweet = request.form.get('selected_tweet')
-    _, tweet_url = tweets[selected_tweet]
+    selected_source = request.form.get('selected_source')
+    actual_source = request.form.get('actual_source')
+    tweet_url = request.form.get('tweet_url')
 
-    if selected_tweet == 'central':
-        result_message = "Correct! You selected the real tweet from NBACentral."
-        copy_message = "I was able to guess the real tweet from NBACentral! Can you?"
+    if selected_source == actual_source:
+        result_message = f"Correct! You guessed the tweet's source."
+        copy_message = f"I correctly guessed that the source of this tweet! Can you do it too?"
     else:
-        result_message = "Oops, you got Centeled! You selected the fake tweet from NBACentel."
-        copy_message = "I got Centeled! Can you guess the real tweet from between the two?"
+        result_message = f"Oops, you got Centeled! The tweet was actually from {actual_source}."
+        copy_message = "I got Centeled! Can you guess correctly?"
 
     template = """
     <!doctype html>
@@ -90,11 +91,7 @@ def result():
         <div class="container mt-5">
           <h1 class="mb-4">Result</h1>
           <p>{{ result_message }}</p>
-          {% if tweet_url != "Tweet Not Found" %}
           <p>Tweet URL: <a href="{{ tweet_url }}" target="_blank">{{ tweet_url }}</a></p>
-          {% else %}
-          <p>Tweet URL: {{ tweet_url }}</p>
-          {% endif %}
           <a href="{{ url_for('home') }}" class="btn btn-primary mt-3">Try Again</a>
           <button onclick="copyResults()" class="btn btn-secondary mt-3">Share Your Results</button>
           <script>
